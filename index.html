@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NinhTax - Công việc hàng ngày</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm" class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <i class="fas fa-building"></i>
+                <h2>NinhTax - Công việc hàng ngày</h2>
+                <p>Hệ thống quản lý công việc</p>
+            </div>
+            
+            <!-- Tab chuyển đổi Đăng nhập / Đăng ký -->
+            <div class="login-tabs">
+                <button class="tab-btn active" data-tab="login">Đăng nhập</button>
+                <button class="tab-btn" data-tab="register">Đăng ký</button>
+            </div>
+            
+            <!-- Form Đăng nhập -->
+            <div id="loginTab" class="tab-content active">
+                <form id="loginFormElement">
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="Mật khẩu" required>
+                    </div>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                    </button>
+                </form>
+                <div class="demo-info">
+                    <i class="fas fa-info-circle"></i> Tài khoản demo:
+                    <div class="demo-accounts">
+                        <span onclick="window.fillDemoAccount && window.fillDemoAccount('admin@demo.com', '123456')">👑 Admin</span>
+                        <span onclick="window.fillDemoAccount && window.fillDemoAccount('nhanvien1@demo.com', '123456')">👤 Nhân viên 1</span>
+                        <span onclick="window.fillDemoAccount && window.fillDemoAccount('nhanvien2@demo.com', '123456')">👤 Nhân viên 2</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Đăng ký -->
+            <div id="registerTab" class="tab-content hidden">
+                <form id="registerFormElement">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="regName" placeholder="Họ và tên" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="regEmail" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="regPassword" placeholder="Mật khẩu (tối thiểu 6 ký tự)" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="regConfirmPassword" placeholder="Xác nhận mật khẩu" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="regRole" style="width: 100%; padding: 12px 15px; border-radius: 10px; border: 2px solid #e0e0e0;">
+                            <option value="staff">👤 Nhân viên</option>
+                            <option value="admin">👑 Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-user-plus"></i> Đăng ký
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-building"></i>
+                <span>NinhTax - Công việc hàng ngày</span>
+            </div>
+            <div class="user-info">
+                <div class="notification-bell" id="notificationBell">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="notificationBadge">0</span>
+                </div>
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="user-dropdown">
+                        <span id="userName"></span>
+                        <span id="userRole" class="role-badge"></span>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Taskbar Menu -->
+<div class="taskbar">
+    <button class="taskbar-btn active" data-view="dashboard" id="dashboardMenuBtn">
+        <i class="fas fa-chart-line"></i>
+        <span>Tổng quan</span>
+    </button>
+    <button class="taskbar-btn" data-view="companies" id="companiesMenuBtn">
+        <i class="fas fa-building"></i>
+        <span>Danh sách HKD/Cty</span>
+    </button>
+    <button class="taskbar-btn" data-view="progress" id="progressMenuBtn">
+        <i class="fas fa-chart-simple"></i>
+        <span>Tiến độ</span>
+    </button>
+    <button class="taskbar-btn" data-view="users" id="usersMenuBtn" style="display: none;">
+        <i class="fas fa-users"></i>
+        <span>Nhân sự</span>
+    </button>
+</div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div id="dashboardView" class="view active"></div>
+            <div id="companiesView" class="view hidden"></div>
+            <div id="myTasksView" class="view hidden"></div>
+            <div id="progressView" class="view hidden"></div>
+            <div id="supportView" class="view hidden"></div>
+            <div id="usersView" class="view hidden"></div>
+            <div id="allTasksView" class="view hidden"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Thêm/Sửa Công ty/HKD -->
+    <div id="entityModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3 id="modalTitle"><i class="fas fa-plus-circle"></i> Thêm mới HKD/Công ty</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Thêm/Sửa Công việc -->
+    <div id="taskModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3 id="taskModalTitle"><i class="fas fa-clipboard-list"></i> Thêm công việc mới</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="taskModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Xem ghi chú công việc -->
+    <div id="noteModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-comment-dots"></i> Ghi chú công việc</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="noteModalBody"></div>
+        </div>
+    </div>
+
+<!-- Scripts - Load đúng thứ tự -->
+<!-- 1. Firebase -->
+<script src="js/firebase-config.js"></script>
+
+<!-- 2. Components và Helpers (các hàm cơ bản) -->
+<script src="js/components.js"></script>
+
+<!-- 3. Templates -->
+<script src="js/task-templates.js"></script>
+
+<!-- 4. Task management -->
+<script src="js/tasks.js"></script>
+
+<!-- 5. Dashboard -->
+<script src="js/dashboard.js"></script>
+
+<!-- 6. Company modules (QUAN TRỌNG: list trước, detail sau) -->
+<script src="js/company-list.js"></script>
+<script src="js/company-detail.js"></script>
+<script src="js/company-crud.js"></script>
+
+<!-- 7. Other modules -->
+<script src="js/progress.js"></script>
+<script src="js/users.js"></script>
+
+<!-- 8. Auth -->
+<script src="js/auth.js"></script>
+
+<!-- 9. App cuối cùng -->
+<script src="js/app.js"></script>
+</body>
+</html>
