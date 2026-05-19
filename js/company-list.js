@@ -250,35 +250,38 @@ window.renderCompaniesView = async function() {
     const canAddCompany = window.currentUser != null;
     
     const html = `
-        <div class="two-columns">
-            <!-- Sidebar trái: Danh sách công ty -->
-            <div class="company-list-panel">
-                <div class="card">
-                    <div class="card-title">
-                        <span><i class="fas fa-list"></i> Danh sách HKD/Công ty</span>
-                        ${canAddCompany ? '<button class="btn btn-primary btn-sm" onclick="window.showAddCompanyModal()"><i class="fas fa-plus"></i> Thêm</button>' : ''}
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="searchCompany" placeholder="🔍 Tìm kiếm công ty/HKD...">
-                    </div>
-                    <div class="filter-group">
-                        <select class="filter-select" id="filterStaff">
-                            <option value="all">👥 Đang tải...</option>
-                        </select>
-                    </div>
-                    <div class="company-items" id="companyList"></div>
-                </div>
+    <div class="two-columns">
+        <!-- Sidebar trái: Danh sách công ty -->
+        <div class="company-list-panel">
+            <div class="close-sidebar-btn" onclick="window.closeCompanyList()">
+                <i class="fas fa-times"></i> Đóng
             </div>
-            
-            <!-- Chi tiết công ty bên phải -->
-            <div class="company-detail-panel" id="companyDetailPanel">
-                <div class="empty-state">
-                    <i class="fas fa-building" style="font-size: 48px;"></i>
-                    <p>🏢 Chọn một công ty/HKD để xem chi tiết</p>
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-list"></i> Danh sách HKD/Công ty</span>
+                    ${canAddCompany ? '<button class="btn btn-primary btn-sm" onclick="window.showAddCompanyModal()"><i class="fas fa-plus"></i> Thêm</button>' : ''}
                 </div>
+                <div class="search-box">
+                    <input type="text" id="searchCompany" placeholder="🔍 Tìm kiếm công ty/HKD...">
+                </div>
+                <div class="filter-group">
+                    <select class="filter-select" id="filterStaff">
+                        <option value="all">👥 Đang tải...</option>
+                    </select>
+                </div>
+                <div class="company-items" id="companyList"></div>
             </div>
         </div>
-    `;
+        
+        <!-- Chi tiết công ty bên phải -->
+        <div class="company-detail-panel" id="companyDetailPanel">
+            <div class="empty-state">
+                <i class="fas fa-building" style="font-size: 48px;"></i>
+                <p>🏢 Chọn một công ty/HKD để xem chi tiết</p>
+            </div>
+        </div>
+    </div>
+`;
     
     const companiesView = document.getElementById('companiesView');
     if (companiesView) companiesView.innerHTML = html;
@@ -301,3 +304,63 @@ window.renderCompaniesView = async function() {
 };
 
 console.log('Company list module loaded!');
+// ========== MOBILE FUNCTIONS ==========
+// Biến lưu trạng thái danh sách có đang mở không
+let isCompanyListOpen = false;
+
+// Mở danh sách công ty trên mobile
+window.openCompanyList = function() {
+    const sidebar = document.querySelector('.company-list-panel');
+    if (sidebar) {
+        sidebar.classList.add('open');
+        isCompanyListOpen = true;
+    }
+};
+
+// Đóng danh sách công ty trên mobile
+window.closeCompanyList = function() {
+    const sidebar = document.querySelector('.company-list-panel');
+    if (sidebar) {
+        sidebar.classList.remove('open');
+        isCompanyListOpen = false;
+    }
+};
+
+// Toggle danh sách công ty (gọi khi click vào tab)
+window.toggleCompanyList = function() {
+    if (isCompanyListOpen) {
+        window.closeCompanyList();
+    } else {
+        window.openCompanyList();
+    }
+};
+
+// Đóng sidebar khi chọn công ty (trên mobile)
+const originalSelectCompany = window.selectCompany;
+window.selectCompany = function(companyId) {
+    console.log('selectCompany called:', companyId);
+    window.selectedCompanyId = companyId;
+    window.renderCompanyList();
+    if (window.renderCompanyDetail) {
+        window.renderCompanyDetail(companyId);
+    }
+    // Trên mobile, tự động đóng sidebar sau khi chọn công ty
+    if (window.innerWidth <= 768) {
+        window.closeCompanyList();
+    }
+};
+
+// Quay lại danh sách (từ chi tiết công ty)
+window.backToCompanyList = function() {
+    window.openCompanyList();
+    // Cuộn lên đầu trang detail
+    const detailPanel = document.querySelector('.company-detail-panel');
+    if (detailPanel) {
+        detailPanel.scrollTop = 0;
+    }
+};
+
+console.log('Mobile functions loaded!');
+
+
+console.log('Mobile functions loaded!');

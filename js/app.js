@@ -4,18 +4,28 @@ window.selectedCompanyId = null;
 
 window.setupAppEventListeners = function() {
     document.querySelectorAll('.taskbar-btn').forEach(btn => {
-        btn.removeEventListener('click', btn._listener);
+    btn.removeEventListener('click', btn._listener);
+    
+    const handler = () => {
+        const view = btn.dataset.view;
         
-        const handler = () => {
-            const view = btn.dataset.view;
-            if (view && window.switchView) {
-                window.switchView(view);
+        // TRÊN MOBILE: Nếu click vào tab "companies" và đang ở view companies
+        if (window.innerWidth <= 768 && view === 'companies' && window.currentView === 'companies') {
+            // Toggle danh sách công ty
+            if (window.toggleCompanyList) {
+                window.toggleCompanyList();
             }
-        };
+            return;
+        }
         
-        btn._listener = handler;
-        btn.addEventListener('click', handler);
-    });
+        if (view && window.switchView) {
+            window.switchView(view);
+        }
+    };
+    
+    btn._listener = handler;
+    btn.addEventListener('click', handler);
+});
 };
 
 window.switchView = async function(view) {
