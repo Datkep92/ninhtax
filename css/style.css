@@ -1595,3 +1595,264 @@ body {
         min-height: auto;
     }
 }
+/* Import modal styles */
+.import-info {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+#importPreview {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+#importPreview table {
+    font-size: 12px;
+}
+
+#importPreview th,
+#importPreview td {
+    padding: 6px 8px;
+}
+
+.my-company-badge {
+    background: #4caf50;
+    color: white;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+}
+
+/* ========== COMPANY CARD SIMPLE ========== */
+.company-card-simple {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #e8e8e8;
+}
+
+.company-card-simple:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.company-card-simple.active {
+    border-left: 3px solid #667eea;
+    background: #f8f9ff;
+}
+
+/* Dòng ngang */
+.company-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.company-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.company-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.company-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.badge-hkd { background: #e3f2fd; color: #1976d2; }
+.badge-company { background: #e8f5e9; color: #388e3c; }
+
+.my-badge {
+    background: #4caf50;
+    color: white;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.company-status-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 15px;
+}
+
+.company-staff {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Progress mini */
+.company-progress-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #666;
+}
+
+.progress-bar-mini {
+    width: 60px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    height: 4px;
+    overflow: hidden;
+}
+
+.progress-fill-mini {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    height: 100%;
+    border-radius: 10px;
+}
+
+/* Thống kê ngang */
+.company-stats-mini {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #666;
+    padding: 6px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 6px;
+}
+
+.stat-overdue {
+    color: #f44336;
+    font-weight: 500;
+}
+
+/* Cảnh báo mini */
+.company-warning-mini {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #fff3e0;
+    color: #ff9800;
+}
+
+.company-warning-mini.urgent {
+    background: #ffebee;
+    color: #f44336;
+    font-weight: 500;
+}
+
+.company-warning-mini.overdue {
+    background: #ffebee;
+    color: #f44336;
+}
+
+/* ========== COMPANY CARD - 2 DÒNG ========== */
+.company-card-simple {
+    background: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #e8e8e8;
+}
+
+.company-card-simple:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.company-card-simple.active {
+    border-left: 3px solid #667eea;
+    background: #f8f9ff;
+}
+
+/* Dòng ngang */
+.company-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Cảnh báo trạng thái */
+.company-status-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 15px;
+}
+
+/* Badge loại hình */
+.company-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.badge-hkd { background: #e3f2fd; color: #1976d2; }
+.badge-company { background: #e8f5e9; color: #388e3c; }
+
+/* Tên công ty */
+.company-name {
+    font-weight: 600;
+    font-size: 14px;
+    flex: 1;
+}
+
+/* Badge "Của tôi" */
+.my-badge {
+    background: #4caf50;
+    color: white;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Nhân viên quản lý */
+.company-staff {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Thanh tiến trình */
+.company-progress-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #666;
+}
+
+.progress-bar-mini {
+    width: 80px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    height: 5px;
+    overflow: hidden;
+}
+
+.progress-fill-mini {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    height: 100%;
+    border-radius: 10px;
+}
