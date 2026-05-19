@@ -317,8 +317,9 @@ body {
 /* ========== CONTENT AREA ========== */
 .content-area {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 12px 20px;
+    min-height: 0;
 }
 
 .view { animation: fadeIn 0.3s ease; }
@@ -471,13 +472,16 @@ body {
     background: #999;
 }
 
-/* ========== COMPANY DETAIL PANEL ========== */
 .company-detail-panel {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
-    height: 100%;
+    overflow-x: hidden;
     min-height: 0;
+    height: 100%;
     padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .company-detail-panel::-webkit-scrollbar {
@@ -1358,7 +1362,7 @@ body {
     }
     
     .taskbar-btn {
-        padding: 6px 14px;
+        padding: 6px 12px;
         font-size: 12px;
         white-space: nowrap;
     }
@@ -1370,86 +1374,46 @@ body {
     /* Content Area */
     .content-area {
         padding: 10px;
-        position: relative;
         height: calc(100vh - 110px);
-        overflow: hidden;
+        overflow-y: auto;
     }
     
     /* ===== TWO COLUMNS MOBILE ===== */
     .two-columns {
-        position: relative;
-        height: 100%;
-        overflow: hidden;
+        display: block;
+        height: auto;
+        min-height: 100%;
     }
     
-    /* Sidebar - Danh sách công ty (trượt từ trái) */
+    /* Sidebar - Ẩn mặc định, hiện khi có class open */
     .company-list-panel {
         position: fixed;
         left: 0;
-        top: 56px;  /* Bắt đầu từ dưới header */
+        top: 56px;
         width: 85%;
-        height: calc(100vh - 56px);  /* Chiều cao full trừ header */
-        z-index: 1000;
+        height: calc(100vh - 56px);
         background: white;
+        z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
-        overflow-y: auto;  /* CHO PHÉP CUỘN DỌC */
+        overflow-y: auto;
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        display: flex;
-        flex-direction: column;
     }
     
     .company-list-panel.open {
         transform: translateX(0);
     }
     
-    /* Nội dung bên trong sidebar - cho phép cuộn */
-    .company-list-panel .card {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        overflow: hidden;
-        border-radius: 0;
-        margin: 0;
+    /* Detail panel - Luôn hiển thị full */
+    .company-detail-panel {
+        width: 100%;
+        min-height: 100%;
+        overflow-y: visible;
     }
     
-    .company-list-panel .card-title {
-        flex-shrink: 0;
-        padding: 12px 16px;
-        background: white;
-    }
-    
-    .company-list-panel .search-box {
-        flex-shrink: 0;
-        padding: 0 12px 8px 12px;
-    }
-    
-    .company-list-panel .filter-group {
-        flex-shrink: 0;
-        padding: 0 12px 12px 12px;
-    }
-    
-    /* Danh sách công ty - CUỘN ĐƯỢC */
-    .company-list-panel .company-items {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0 12px 12px 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-height: 0;
-    }
-    
-    /* Đảm bảo card công ty hiển thị đầy đủ */
-    .company-list-panel .company-card {
-        flex-shrink: 0;
-    }
-    
-    /* Nút đóng danh sách trong sidebar */
+    /* Nút đóng sidebar */
     .close-sidebar-btn {
         display: flex;
-        align-items: center;
         justify-content: flex-end;
         padding: 12px 16px;
         background: #f8f9fa;
@@ -1457,20 +1421,10 @@ body {
         cursor: pointer;
         color: #667eea;
         font-size: 14px;
-        font-weight: 500;
-        gap: 8px;
-        flex-shrink: 0;
+        gap: 6px;
     }
     
-    /* Detail Panel - Chiếm toàn màn hình */
-    .company-detail-panel {
-        width: 100%;
-        height: 100%;
-        overflow-y: auto;
-        transition: all 0.3s ease;
-    }
-    
-    /* Nút quay lại danh sách trong detail panel */
+    /* Nút quay lại danh sách */
     .back-to-list-btn {
         display: inline-flex;
         align-items: center;
@@ -1482,19 +1436,28 @@ body {
         color: #667eea;
         cursor: pointer;
         margin-bottom: 10px;
-        transition: all 0.2s;
+    }
+    
+    /* Fix cho card trong sidebar */
+    .company-list-panel .card {
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        min-height: 100%;
+    }
+    
+    .company-list-panel .company-items {
+        padding-bottom: 20px;
     }
 }
 
-/* Desktop giữ nguyên */
+/* Desktop */
 @media (min-width: 769px) {
     .company-list-panel {
         position: relative;
         transform: translateX(0) !important;
         width: 360px;
         height: auto;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        overflow: visible;
     }
     
     .close-sidebar-btn,
@@ -1502,8 +1465,133 @@ body {
         display: none !important;
     }
     
-    .company-list-panel .company-items {
-        max-height: calc(100vh - 200px);
+    .two-columns {
+        display: flex;
+        gap: 16px;
+    }
+}
+/* ===== FIX MOBILE SIDEBAR HEIGHT ===== */
+@media (max-width: 768px) {
+
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .main-app {
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .content-area {
+        height: calc(100dvh - 110px);
+        padding: 8px;
+        overflow: hidden;
+    }
+
+    .two-columns {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        gap: 0;
+    }
+
+    .company-list-panel {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    .company-list-panel .card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .company-items {
+        flex: 1;
         overflow-y: auto;
+        min-height: 0;
+        padding-bottom: 80px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .company-detail-panel {
+        height: 100%;
+        overflow-y: auto;
+        min-height: 0;
+    }
+}
+
+/* FIX SCROLL CHI TIẾT CÔNG TY MOBILE */
+@media (max-width: 768px) {
+
+    .company-detail-panel {
+        flex: 1;
+        height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 120px;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .company-detail-panel > div {
+        min-height: fit-content;
+    }
+
+    .content-area,
+    .two-columns {
+        min-height: 0;
+    }
+}
+
+/* ===== FIX MOBILE COMPANY DETAIL SCROLL ===== */
+@media (max-width: 768px) {
+
+    /* VIEW CHA */
+    #companiesView,
+    .view {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* LAYOUT 2 CỘT */
+    .two-columns {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+
+
+    /* CHI TIẾT CÔNG TY */
+    .company-detail-panel {
+        flex: 1;
+        min-height: 0;
+
+        height: 0; /* QUAN TRỌNG */
+        
+        overflow-y: auto !important;
+        overflow-x: hidden;
+
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+
+        padding-bottom: 120px;
+    }
+
+    /* FIX FLEX CHILD */
+    .company-detail-panel * {
+        min-height: auto;
     }
 }
