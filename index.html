@@ -10,6 +10,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
 </head>
 <body>
     <!-- Loading -->
@@ -182,35 +184,19 @@
         </div>
     </div>
 
-<!-- Scripts - Load đúng thứ tự -->
-<!-- 1. Firebase -->
+<!-- Scripts -->
 <script src="js/firebase-config.js"></script>
-
-<!-- 2. Components và Helpers (các hàm cơ bản) -->
 <script src="js/components.js"></script>
-
-<!-- 3. Templates -->
 <script src="js/task-templates.js"></script>
-
-<!-- 4. Task management -->
 <script src="js/tasks.js"></script>
-
-<!-- 5. Dashboard -->
 <script src="js/dashboard.js"></script>
-
-<!-- 6. Company modules (QUAN TRỌNG: list trước, detail sau) -->
 <script src="js/company-list.js"></script>
 <script src="js/company-detail.js"></script>
 <script src="js/company-crud.js"></script>
-
-<!-- 7. Other modules -->
+<script src="js/import-excel.js"></script>  <!-- THÊM DÒNG NÀY -->
 <script src="js/progress.js"></script>
 <script src="js/users.js"></script>
-
-<!-- 8. Auth -->
 <script src="js/auth.js"></script>
-
-<!-- 9. App cuối cùng -->
 <script src="js/app.js"></script>
 </body>
 </html>
