@@ -230,15 +230,7 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// Hàm chọn công ty
-window.selectCompany = function(companyId) {
-    console.log('selectCompany called:', companyId);
-    window.selectedCompanyId = companyId;
-    window.renderCompanyList();
-    if (window.renderCompanyDetail) {
-        window.renderCompanyDetail(companyId);
-    }
-};
+
 
 // Render toàn bộ view companies
 window.renderCompaniesView = async function() {

@@ -426,3 +426,130 @@ function escapeHtml(str) {
 }
 
 console.log('Tasks module with viewTaskDetail loaded!');
+
+// ========== TASK ACTIONS FOR STAFF ==========
+
+// Hoàn thành task (gọi từ nút "Hoàn thành" trong detail)
+window.completeTask = async function(taskId) {
+    if (!confirm('✅ Xác nhận hoàn thành công việc này?')) return;
+    
+    window.showLoading();
+    
+    const task = window.tasksList.find(t => t.id === taskId);
+    if (!task) {
+        window.hideLoading();
+        window.showMessage('Không tìm thấy công việc!');
+        return;
+    }
+    
+    const now = new Date().toISOString();
+    const history = task.history || [];
+    
+    history.push({
+        action: 'completed',
+        title: 'Hoàn thành',
+        description: `${window.currentUserData?.name} đã hoàn thành công việc`,
+        by: window.currentUser.uid,
+        byName: window.currentUserData?.name,
+        at: now,
+        timestamp: now
+    });
+    
+    const updates = {
+        status: 'done',
+        completedAt: now,
+        completedBy: window.currentUser.uid,
+        completedByName: window.currentUserData?.name,
+        history: history,
+        updatedAt: now
+    };
+    
+    if (task.startedAt) {
+        const start = new Date(task.startedAt);
+        const end = new Date(now);
+        updates.processingTime = Math.floor((end - start) / 1000);
+    }
+    
+    const taskRef = window.firebaseRef(window.firebaseDb, `tasks/${taskId}`);
+    await window.firebaseUpdate(taskRef, updates);
+    
+    await window.loadTasks();
+    window.hideLoading();
+    
+    // Refresh UI
+    if (window.currentView === 'companies' && window.selectedCompanyId) {
+        if (window.renderCompanyDetail) await window.renderCompanyDetail(window.selectedCompanyId);
+        if (window.renderCompanyList) window.renderCompanyList();
+    } else if (window.currentView === 'progress') {
+        if (window.renderProgressView) await window.renderProgressView();
+    } else if (window.currentView === 'dashboard') {
+        if (window.renderDashboard) await window.renderDashboard();
+    }
+    
+    if (window.updateBadges) await window.updateBadges();
+    window.showMessage('✅ Đã hoàn thành công việc!');
+    
+    // Đóng modal nếu đang mở
+    if (window.closeTaskDetailModal) window.closeTaskDetailModal();
+};
+
+// Bắt đầu task (gọi từ nút "Bắt đầu" trong detail)
+window.startTask = async function(taskId) {
+    if (!confirm('▶️ Xác nhận bắt đầu xử lý công việc này?')) return;
+    
+    window.showLoading();
+    
+    const task = window.tasksList.find(t => t.id === taskId);
+    if (!task) {
+        window.hideLoading();
+        window.showMessage('Không tìm thấy công việc!');
+        return;
+    }
+    
+    const now = new Date().toISOString();
+    const history = task.history || [];
+    
+    history.push({
+        action: 'started',
+        title: 'Bắt đầu xử lý',
+        description: `${window.currentUserData?.name} đã bắt đầu xử lý công việc`,
+        by: window.currentUser.uid,
+        byName: window.currentUserData?.name,
+        at: now,
+        timestamp: now
+    });
+    
+    const updates = {
+        status: 'processing',
+        startedAt: now,
+        isUrgent: false,
+        history: history,
+        updatedAt: now
+    };
+    
+    const taskRef = window.firebaseRef(window.firebaseDb, `tasks/${taskId}`);
+    await window.firebaseUpdate(taskRef, updates);
+    
+    await window.loadTasks();
+    window.hideLoading();
+    
+    // Refresh UI
+    if (window.currentView === 'companies' && window.selectedCompanyId) {
+        if (window.renderCompanyDetail) await window.renderCompanyDetail(window.selectedCompanyId);
+        if (window.renderCompanyList) window.renderCompanyList();
+    } else if (window.currentView === 'progress') {
+        if (window.renderProgressView) await window.renderProgressView();
+    } else if (window.currentView === 'dashboard') {
+        if (window.renderDashboard) await window.renderDashboard();
+    }
+    
+    window.showMessage('▶️ Đã bắt đầu xử lý công việc!');
+    
+    // Đóng modal nếu đang mở
+    if (window.closeTaskDetailModal) window.closeTaskDetailModal();
+};
+
+// Xóa task (đã có, giữ nguyên)
+// window.deleteTask = async function(taskId) { ... }
+
+console.log('Tasks module with completeTask and startTask loaded!');
