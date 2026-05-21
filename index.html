@@ -14,6 +14,42 @@
 
 </head>
 <body>
+    <!-- Nút thêm việc nhanh (FAB) -->
+<button id="fabAddTask" class="fab-add-task" title="Thêm công việc mới">
+    <i class="fas fa-plus"></i>
+</button>
+<!-- Chat Widget -->
+<div id="chatWidget" class="chat-widget hidden">
+    <div class="chat-header">
+        <div class="chat-header-info">
+            <i class="fas fa-comments"></i>
+            <span id="chatHeaderTitle">Chat nội bộ</span>
+        </div>
+        <div class="chat-header-actions">
+            <button id="chatBackBtn" class="chat-back-btn" onclick="window.backToGeneralChat()" style="display: none;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <button class="chat-close-btn" onclick="window.toggleChat()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-loading">Đang tải tin nhắn...</div>
+    </div>
+    <div class="chat-input">
+        <input type="text" id="chatMessageInput" placeholder="Nhập tin nhắn..." maxlength="500">
+        <button onclick="window.sendChatMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Nút chat nổi -->
+<button id="chatFabBtn" class="chat-fab-btn" onclick="window.toggleChat()">
+    <i class="fas fa-comment-dots"></i>
+    <span class="chat-badge" id="chatBadge">0</span>
+</button>
     <!-- Loading -->
     <div id="loading" class="loading hidden">
         <div class="spinner"></div>
@@ -120,14 +156,13 @@
     </button>
     <button class="taskbar-btn" data-view="companies" id="companiesMenuBtn">
         <i class="fas fa-building"></i>
-        <span>Danh sách HKD/Cty</span>
+        <span>Danh sách</span>
     </button>
     <button class="taskbar-btn" data-view="progress" id="progressMenuBtn">
         <i class="fas fa-chart-simple"></i>
         <span>Tiến độ</span>
     </button>
     <button class="taskbar-btn" data-view="users" id="usersMenuBtn" style="display: none;">
-        <i class="fas fa-users"></i>
         <span>Nhân sự</span>
     </button>
 </div>
@@ -201,5 +236,7 @@
 <script src="js/progress.js"></script>
 <script src="js/users.js"></script>
 <script src="js/notifications.js"></script>  <!-- ← THÊM DÒNG NÀY -->
+<script src="js/chat.js"></script>
+<script src="js/tags.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
