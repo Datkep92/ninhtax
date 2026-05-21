@@ -1,6 +1,5 @@
 // ========== CRUD CÔNG TY/HKD ==========
 
-// Đóng modal
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.add('hidden');
@@ -15,6 +14,15 @@ window.showAddCompanyModal = function() {
             <option value="">-- Chưa phân công --</option>
             ${window.usersList.filter(u => u.role === 'staff').map(u => `<option value="${u.uid}">${u.name}</option>`).join('')}
         ` : `<input type="hidden" name="assignedTo" value="${window.currentUser.uid}">`;
+        
+        const tagsHtml = (window.availableTags || []).map(tag => `
+            <label class="tag-checkbox" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; margin-bottom: 8px; cursor: pointer;">
+                <input type="checkbox" name="tags" value="${tag.id}">
+                <span class="tag-badge" style="background: ${tag.color}20; color: ${tag.color}; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                    <i class="fas ${tag.icon || 'fa-tag'}"></i> ${tag.name}
+                </span>
+            </label>
+        `).join('');
         
         const html = `
             <form id="addCompanyForm">
@@ -40,6 +48,13 @@ window.showAddCompanyModal = function() {
                 <div class="form-group">
                     <label>Mã số thuế</label>
                     <input type="text" name="taxCode" placeholder="0123456789">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-tags"></i> Thẻ công ty</label>
+                    <div class="tags-selector" id="tagsSelector">
+                        ${tagsHtml || '<p class="empty-state">Chưa có thẻ nào. Hãy tạo thẻ trước.</p>'}
+                    </div>
+                    <small>Chọn thẻ để phân loại công ty</small>
                 </div>
                 ${isAdmin ? `
                     <div class="form-group">
@@ -80,6 +95,10 @@ window.showAddCompanyModal = function() {
                 assignedToName = window.currentUserData?.name;
             }
             
+            // Lấy các thẻ được chọn
+            const selectedTagIds = formData.getAll('tags');
+            const selectedTags = (window.availableTags || []).filter(tag => selectedTagIds.includes(tag.id));
+            
             const newCompany = {
                 name: formData.get('name'),
                 type: formData.get('type'),
@@ -103,6 +122,11 @@ window.showAddCompanyModal = function() {
             const newCompanyRef = await window.firebasePush(companiesRef, newCompany);
             const newCompanyId = newCompanyRef.key;
             
+            // Lưu thẻ cho công ty
+            if (selectedTags.length > 0 && window.saveCompanyTags) {
+                await window.saveCompanyTags(newCompanyId, selectedTags);
+            }
+            
             await window.loadCompanies();
             
             setTimeout(async () => {
@@ -110,14 +134,12 @@ window.showAddCompanyModal = function() {
                 if (addedCompany && window.generateTasksForCompany) {
                     await window.generateTasksForCompany(newCompanyId);
                 }
-                
                 await window.loadAllData();
+                if (window.loadCompanyTags) await window.loadCompanyTags();
                 window.renderCompanyList();
-                
                 if (window.selectedCompanyId === newCompanyId && window.renderCompanyDetail) {
                     await window.renderCompanyDetail(newCompanyId);
                 }
-                
                 window.hideLoading();
                 closeModal('entityModal');
                 window.selectCompany(newCompanyId);
@@ -127,7 +149,7 @@ window.showAddCompanyModal = function() {
     });
 };
 
-// ========== SỬA CÔNG TY (Admin + Nhân viên phụ trách) ==========
+// Sửa công ty
 window.showEditCompanyModal = function(companyId) {
     const company = window.companiesList.find(c => c.id === companyId);
     if (!company) return;
@@ -140,13 +162,23 @@ window.showEditCompanyModal = function(companyId) {
         return;
     }
     
+    const currentTags = window.companyTags[companyId] || [];
+    
     window.loadUsers().then(() => {
         const staffOptions = window.usersList
             .filter(u => u.role === 'staff')
             .map(u => `<option value="${u.uid}" ${company.assignedTo === u.uid ? 'selected' : ''}>${u.name}</option>`)
             .join('');
         
-        // Hiển thị lịch sử chuyển giao nếu có
+        const tagsHtml = (window.availableTags || []).map(tag => `
+            <label class="tag-checkbox" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; margin-bottom: 8px; cursor: pointer;">
+                <input type="checkbox" name="tags" value="${tag.id}" ${currentTags.some(t => t.id === tag.id) ? 'checked' : ''}>
+                <span class="tag-badge" style="background: ${tag.color}20; color: ${tag.color}; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                    <i class="fas ${tag.icon || 'fa-tag'}"></i> ${tag.name}
+                </span>
+            </label>
+        `).join('');
+        
         const historyHtml = company.history && company.history.length > 0 ? `
             <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 12px;">
                 <strong><i class="fas fa-history"></i> Lịch sử thay đổi:</strong>
@@ -188,12 +220,19 @@ window.showEditCompanyModal = function(companyId) {
                     <input type="text" name="taxCode" value="${(company.taxCode || '').replace(/"/g, '&quot;')}">
                 </div>
                 <div class="form-group">
+                    <label><i class="fas fa-tags"></i> Thẻ công ty</label>
+                    <div class="tags-selector">
+                        ${tagsHtml || '<p class="empty-state">Chưa có thẻ nào.</p>'}
+                    </div>
+                    <small>Chọn thẻ để phân loại công ty</small>
+                </div>
+                <div class="form-group">
                     <label><i class="fas fa-user-tie"></i> Nhân viên phụ trách</label>
                     <select name="assignedTo">
                         <option value="">-- Chưa phân công --</option>
                         ${staffOptions}
                     </select>
-                    <small style="color: #666;">Thay đổi nhân viên phụ trách sẽ được lưu vào lịch sử</small>
+                    <small>Thay đổi nhân viên phụ trách sẽ được lưu vào lịch sử</small>
                 </div>
                 ${historyHtml}
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -215,6 +254,10 @@ window.showEditCompanyModal = function(companyId) {
             const newAssignedTo = formData.get('assignedTo');
             const newAssignedUser = window.usersList.find(u => u.uid === newAssignedTo);
             
+            // Lấy các thẻ được chọn
+            const selectedTagIds = formData.getAll('tags');
+            const selectedTags = (window.availableTags || []).filter(tag => selectedTagIds.includes(tag.id));
+            
             const updates = {
                 name: formData.get('name'),
                 type: formData.get('type'),
@@ -226,7 +269,6 @@ window.showEditCompanyModal = function(companyId) {
                 updatedAt: new Date().toISOString()
             };
             
-            // Kiểm tra xem có thay đổi nhân viên phụ trách không
             const isTransferring = newAssignedTo !== company.assignedTo;
             
             if (newAssignedTo) {
@@ -239,9 +281,7 @@ window.showEditCompanyModal = function(companyId) {
             
             // Lưu lịch sử
             const history = company.history || [];
-            
             if (isTransferring && newAssignedTo) {
-                // Chuyển giao quyền quản lý
                 const oldStaffName = company.assignedToName || 'Chưa phân công';
                 const newStaffName = newAssignedUser?.name || 'Chưa phân công';
                 history.push({
@@ -257,13 +297,11 @@ window.showEditCompanyModal = function(companyId) {
                     at: new Date().toISOString()
                 });
             } else {
-                // Cập nhật thông tin thường
                 let changedFields = [];
                 if (updates.name !== company.name) changedFields.push('tên');
                 if (updates.address !== company.address) changedFields.push('địa chỉ');
                 if (updates.phone !== company.phone) changedFields.push('số điện thoại');
                 if (updates.taxCode !== company.taxCode) changedFields.push('mã số thuế');
-                
                 if (changedFields.length > 0) {
                     history.push({
                         action: 'updated',
@@ -276,15 +314,20 @@ window.showEditCompanyModal = function(companyId) {
                     });
                 }
             }
-            
             updates.history = history;
             
             const companyRef = window.firebaseRef(window.firebaseDb, `companies/${companyId}`);
             await window.firebaseUpdate(companyRef, updates);
             
+            // Cập nhật thẻ
+            if (window.saveCompanyTags) {
+                await window.saveCompanyTags(companyId, selectedTags);
+            }
+            
             window.hideLoading();
             closeModal('entityModal');
             await window.loadCompanies();
+            if (window.loadCompanyTags) await window.loadCompanyTags();
             window.renderCompanyList();
             await window.renderCompanyDetail(companyId);
             
@@ -297,10 +340,9 @@ window.showEditCompanyModal = function(companyId) {
     });
 };
 
-// ========== XÓA CÔNG TY (Chỉ Admin) ==========
+// Xóa công ty
 window.deleteCompany = async function(companyId) {
     const isAdmin = window.currentUserRole === 'admin' || window.currentUserData?.role === 'admin';
-    
     if (!isAdmin) {
         window.showMessage('🔒 Chỉ Admin mới có quyền xóa công ty!');
         return;
@@ -319,6 +361,11 @@ window.deleteCompany = async function(companyId) {
     window.showLoading();
     
     await window.firebaseRemove(window.firebaseRef(window.firebaseDb, `companies/${companyId}`));
+    
+    // Xóa tags của công ty
+    if (window.saveCompanyTags) {
+        await window.saveCompanyTags(companyId, []);
+    }
     
     const tasksToDelete = window.tasksList.filter(t => t.companyId === companyId);
     for (const task of tasksToDelete) {
@@ -346,4 +393,4 @@ window.deleteCompany = async function(companyId) {
     window.showMessage(`✅ Đã xóa công ty "${company.name}"!`);
 };
 
-console.log('Company CRUD module loaded - Staff can edit and transfer!');
+console.log('Company CRUD module with tags loaded!');

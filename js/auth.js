@@ -134,7 +134,9 @@ if (loginForm) {
             if (window.initRealtimeListeners) {
                 window.initRealtimeListeners();
             }
-            
+            if (window.initChat) {
+    window.initChat();
+}
             // ========== KHỞI TẠO NOTIFICATION ==========
             if (window.requestNotificationPermission) {
                 window.requestNotificationPermission();

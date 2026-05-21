@@ -307,7 +307,7 @@ window.updateTaskStatus = async function(taskId, status) {
     window.showMessage(`Đã cập nhật trạng thái thành "${window.getStatusText(status)}"`);
 };
 
-// Thêm công việc mới (phân quyền theo vai trò)
+// Thêm công việc mới (phân quyền theo vai trò) - CÓ TÌM KIẾM CÔNG TY
 window.showAddTaskModal = function(companyId = null) {
     window.loadCompanies();
     window.loadUsers();
@@ -320,48 +320,66 @@ window.showAddTaskModal = function(companyId = null) {
     let availableCompanies = [];
     
     if (isAdmin) {
-        // Admin: tất cả công ty
         availableCompanies = window.companiesList;
     } else {
-        // Nhân viên: chỉ công ty mình quản lý
         availableCompanies = window.companiesList.filter(c => c.assignedTo === currentUserId);
     }
     
-    // Kiểm tra quyền nếu có companyId được truyền vào
-    let selectedCompany = null;
-    if (companyId) {
-        selectedCompany = availableCompanies.find(c => c.id === companyId);
-        if (!selectedCompany && !isAdmin) {
-            window.showMessage('🔒 Bạn không có quyền thêm việc cho công ty này!');
-            return;
+    // Xác định công ty mặc định
+    let defaultCompanyId = companyId;
+    let defaultCompany = null;
+    
+    if (!defaultCompanyId && window.selectedCompanyId && window.currentView === 'companies') {
+        defaultCompanyId = window.selectedCompanyId;
+    }
+    
+    if (defaultCompanyId) {
+        defaultCompany = availableCompanies.find(c => c.id === defaultCompanyId);
+        if (!defaultCompany && !isAdmin) {
+            defaultCompany = null;
         }
     }
     
-    // Ngày hạn mặc định là hôm nay + 7 ngày
+    // Nếu không có công ty mặc định, lấy công ty đầu tiên
+    if (!defaultCompany && availableCompanies.length > 0) {
+        defaultCompany = availableCompanies[0];
+        defaultCompanyId = defaultCompany.id;
+    }
+    
+    // Ngày hạn mặc định
     const defaultDueDate = new Date();
     defaultDueDate.setDate(defaultDueDate.getDate() + 7);
     const defaultDueDateStr = defaultDueDate.toISOString().split('T')[0];
     
-    // Xác định người xử lý mặc định (nhân viên quản lý của công ty được chọn)
+    // Xác định người xử lý mặc định
     let defaultAssignedTo = '';
     let defaultAssignedToName = '';
     
-    if (selectedCompany) {
-        defaultAssignedTo = selectedCompany.assignedTo || '';
-        defaultAssignedToName = selectedCompany.assignedToName || 'Chưa phân công';
-    } else if (availableCompanies.length > 0 && !isAdmin) {
-        defaultAssignedTo = availableCompanies[0].assignedTo || currentUserId;
-        defaultAssignedToName = availableCompanies[0].assignedToName || currentUserName;
+    if (defaultCompany) {
+        defaultAssignedTo = defaultCompany.assignedTo || '';
+        defaultAssignedToName = defaultCompany.assignedToName || 'Chưa phân công';
     }
+    
+    // Tạo HTML cho danh sách công ty
+    const companiesHtml = availableCompanies.map(c => `
+        <option value="${c.id}" ${defaultCompanyId === c.id ? 'selected' : ''} 
+                data-name="${escapeHtml(c.name)}"
+                data-type="${c.type}"
+                data-staff-name="${c.assignedToName || 'Chưa phân công'}"
+                data-staff-id="${c.assignedTo || ''}">
+            ${c.type === 'household' ? '🏪' : '🏭'} ${escapeHtml(c.name)}
+            ${isAdmin && c.assignedToName ? ` (${c.assignedToName})` : ''}
+        </option>
+    `).join('');
     
     let assignedToHtml = '';
     
     if (isAdmin) {
-        // Admin: chọn nhân viên nhưng mặc định là nhân viên quản lý của công ty
         assignedToHtml = `
             <div class="form-group">
                 <label>Người xử lý</label>
                 <select name="assignedTo" id="assignedToSelect">
+                    <option value="">-- Chưa phân công --</option>
                     ${window.usersList.filter(u => u.role === 'staff').map(u => `
                         <option value="${u.uid}" ${defaultAssignedTo === u.uid ? 'selected' : ''}>
                             ${escapeHtml(u.name)}
@@ -372,7 +390,6 @@ window.showAddTaskModal = function(companyId = null) {
             </div>
         `;
     } else {
-        // Nhân viên: chỉ gán cho chính mình
         assignedToHtml = `
             <div class="form-group">
                 <label>Người xử lý</label>
@@ -384,22 +401,10 @@ window.showAddTaskModal = function(companyId = null) {
         `;
     }
     
-    // Script để tự động cập nhật người xử lý khi chọn công ty (cho Admin)
-    const autoUpdateScript = isAdmin ? `
-        <script>
-            document.getElementById('companySelect')?.addEventListener('change', function() {
-                const companyId = this.value;
-                const companies = ${JSON.stringify(availableCompanies.map(c => ({ id: c.id, assignedTo: c.assignedTo, assignedToName: c.assignedToName })))};
-                const selectedCompany = companies.find(c => c.id === companyId);
-                if (selectedCompany && selectedCompany.assignedTo) {
-                    const assignedToSelect = document.getElementById('assignedToSelect');
-                    if (assignedToSelect) {
-                        assignedToSelect.value = selectedCompany.assignedTo;
-                    }
-                }
-            });
-        </script>
-    ` : '';
+    // Hiển thị tên công ty mặc định
+    const defaultCompanyName = defaultCompany ? 
+        `${defaultCompany.type === 'household' ? '🏪' : '🏭'} ${escapeHtml(defaultCompany.name)}` : 
+        'Chưa có công ty';
     
     const html = `
         <form id="addTaskForm">
@@ -407,20 +412,39 @@ window.showAddTaskModal = function(companyId = null) {
                 <label>Tên công việc *</label>
                 <input type="text" name="title" required placeholder="Ví dụ: Kiểm tra giấy phép...">
             </div>
+            
             <div class="form-group">
                 <label>Công ty/HKD</label>
-                <select name="companyId" id="companySelect" ${!isAdmin && availableCompanies.length === 1 ? 'disabled' : ''}>
-                    ${availableCompanies.map(c => `
-                        <option value="${c.id}" ${companyId === c.id || (!companyId && selectedCompany?.id === c.id) ? 'selected' : ''}>
-                            ${c.type === 'household' ? '🏪' : '🏭'} ${escapeHtml(c.name)}
-                            ${isAdmin && c.assignedToName ? ` (Phụ trách: ${c.assignedToName})` : ''}
-                        </option>
-                    `).join('')}
-                    ${availableCompanies.length === 0 ? '<option value="">Bạn chưa được phân công công ty nào</option>' : ''}
-                </select>
-                ${!isAdmin && availableCompanies.length === 1 ? '<small>Bạn chỉ có thể thêm việc cho công ty mình quản lý</small>' : ''}
+                <div class="company-selector">
+                    <div class="selected-company-display" id="selectedCompanyDisplay" onclick="toggleCompanyDropdown()">
+                        <span id="selectedCompanyName">${defaultCompanyName}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="company-dropdown" id="companyDropdown" style="display: none;">
+                        <div class="company-search">
+                            <input type="text" id="companySearchInput" placeholder="🔍 Tìm kiếm công ty..." autocomplete="off">
+                        </div>
+                        <div class="company-list" id="companyListContainer">
+                            ${availableCompanies.map(c => `
+                                <div class="company-option ${defaultCompanyId === c.id ? 'selected' : ''}" 
+                                     data-id="${c.id}"
+                                     data-name="${escapeHtml(c.name)}"
+                                     data-type="${c.type}"
+                                     data-staff-id="${c.assignedTo || ''}"
+                                     data-staff-name="${c.assignedToName || 'Chưa phân công'}"
+                                     onclick="selectCompanyFromDropdown('${c.id}', '${escapeHtml(c.name)}', '${c.type}', '${c.assignedTo || ''}', '${c.assignedToName || 'Chưa phân công'}')">
+                                    ${c.type === 'household' ? '🏪' : '🏭'} ${escapeHtml(c.name)}
+                                    ${isAdmin && c.assignedToName ? `<span class="staff-name">(${c.assignedToName})</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="companyId" id="selectedCompanyId" value="${defaultCompanyId || ''}">
             </div>
+            
             ${assignedToHtml}
+            
             <div class="form-group">
                 <label>Độ ưu tiên</label>
                 <select name="priority">
@@ -443,13 +467,97 @@ window.showAddTaskModal = function(companyId = null) {
             </div>
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Tạo công việc</button>
         </form>
-        ${autoUpdateScript}
     `;
     
     document.getElementById('taskModalBody').innerHTML = html;
     document.getElementById('taskModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Thêm công việc mới';
     document.getElementById('taskModal').classList.remove('hidden');
     
+    // ========== KHỞI TẠO SỰ KIỆN CHO DROPDOWN ==========
+    const assignedToSelect = document.getElementById('assignedToSelect');
+    const selectedCompanyIdInput = document.getElementById('selectedCompanyId');
+    const companySearchInput = document.getElementById('companySearchInput');
+    const companyDropdown = document.getElementById('companyDropdown');
+    const companyListContainer = document.getElementById('companyListContainer');
+    
+    // Hàm đóng dropdown
+    window.closeCompanyDropdown = function() {
+        if (companyDropdown) companyDropdown.style.display = 'none';
+    };
+    
+    // Hàm mở dropdown
+    window.toggleCompanyDropdown = function() {
+        if (companyDropdown.style.display === 'none') {
+            companyDropdown.style.display = 'block';
+            if (companySearchInput) {
+                companySearchInput.focus();
+                filterCompanyOptions();
+            }
+        } else {
+            companyDropdown.style.display = 'none';
+        }
+    };
+    
+    // Hàm lọc danh sách công ty
+    function filterCompanyOptions() {
+        if (!companySearchInput || !companyListContainer) return;
+        const searchTerm = companySearchInput.value.toLowerCase().trim();
+        const options = companyListContainer.querySelectorAll('.company-option');
+        
+        options.forEach(opt => {
+            const text = opt.textContent.toLowerCase();
+            if (searchTerm === '' || text.includes(searchTerm)) {
+                opt.style.display = 'flex';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
+    
+    // Hàm chọn công ty từ dropdown
+    window.selectCompanyFromDropdown = function(id, name, type, staffId, staffName) {
+        // Cập nhật hiển thị
+        const displaySpan = document.getElementById('selectedCompanyName');
+        if (displaySpan) {
+            displaySpan.innerHTML = `${type === 'household' ? '🏪' : '🏭'} ${name}`;
+        }
+        
+        // Cập nhật input hidden
+        if (selectedCompanyIdInput) selectedCompanyIdInput.value = id;
+        
+        // Cập nhật selected class trong dropdown
+        const options = document.querySelectorAll('.company-option');
+        options.forEach(opt => {
+            opt.classList.remove('selected');
+            if (opt.getAttribute('data-id') === id) {
+                opt.classList.add('selected');
+            }
+        });
+        
+        // Nếu là admin, cập nhật người xử lý mặc định
+        if (isAdmin && assignedToSelect && staffId) {
+            assignedToSelect.value = staffId;
+        }
+        
+        // Đóng dropdown
+        window.closeCompanyDropdown();
+    };
+    
+    // Lắng nghe sự kiện tìm kiếm
+    if (companySearchInput) {
+        companySearchInput.addEventListener('input', filterCompanyOptions);
+        companySearchInput.addEventListener('click', (e) => e.stopPropagation());
+    }
+    
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        const selector = document.querySelector('.company-selector');
+        if (selector && !selector.contains(e.target)) {
+            window.closeCompanyDropdown();
+        }
+    });
+    
+    // Xử lý submit form
     document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         window.showLoading();
@@ -458,15 +566,19 @@ window.showAddTaskModal = function(companyId = null) {
         let assignedTo = formData.get('assignedTo');
         let assignedToName = '';
         
-        const selectedCompanyId = formData.get('companyId');
-        const selectedCompany = window.companiesList.find(c => c.id === selectedCompanyId);
+        const selectedCompanyIdValue = selectedCompanyIdInput ? selectedCompanyIdInput.value : formData.get('companyId');
+        const selectedCompany = window.companiesList.find(c => c.id === selectedCompanyIdValue);
+        
+        if (!selectedCompany) {
+            window.hideLoading();
+            window.showMessage('Vui lòng chọn công ty!');
+            return;
+        }
         
         if (isAdmin) {
-            // Admin: lấy từ select
             const assignedUser = window.usersList.find(u => u.uid === assignedTo);
             assignedToName = assignedUser?.name || 'Chưa phân công';
         } else {
-            // Nhân viên: gán chính mình
             assignedTo = currentUserId;
             assignedToName = currentUserName;
         }
@@ -475,7 +587,7 @@ window.showAddTaskModal = function(companyId = null) {
         
         const newTask = {
             title: formData.get('title'),
-            companyId: selectedCompanyId,
+            companyId: selectedCompanyIdValue,
             description: formData.get('description') || '',
             assignedTo: assignedTo || null,
             assignedToName: assignedToName || selectedCompany?.assignedToName || 'Chưa phân công',

@@ -162,12 +162,8 @@ window.renderUsersView = async function() {
             <button class="btn btn-primary" onclick="window.showAddUserModal()">
                 <i class="fas fa-user-plus"></i> Thêm nhân viên
             </button>
-            <button class="btn btn-outline" onclick="window.renderUsersView()">
-                <i class="fas fa-sync-alt"></i> Làm mới
-            </button>
-            <div class="search-box" style="flex: 1; max-width: 300px; margin-left: auto;">
-                <input type="text" id="searchUser" placeholder="🔍 Tìm kiếm nhân viên..." style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd;">
-            </div>
+            
+            
         </div>
         
         <div class="card">

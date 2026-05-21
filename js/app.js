@@ -235,5 +235,28 @@ window.addEventListener('click', (e) => {
         e.target.classList.add('hidden');
     }
 });
-
+// ========== FLOATING ACTION BUTTON - THÊM VIỆC NHANH ==========
+const fabButton = document.getElementById('fabAddTask');
+if (fabButton) {
+    fabButton.addEventListener('click', () => {
+        // Lấy công ty hiện tại đang chọn (nếu có)
+        let currentCompanyId = window.selectedCompanyId || null;
+        
+        // Nếu đang ở tab companies và có công ty được chọn, truyền companyId vào
+        if (window.currentView === 'companies' && currentCompanyId) {
+            if (window.showAddTaskModal) {
+                window.showAddTaskModal(currentCompanyId);
+            } else {
+                window.showMessage('Tính năng đang được phát triển!');
+            }
+        } else {
+            // Nếu không có công ty nào được chọn, hiển thị modal thêm việc (có thể chọn công ty)
+            if (window.showAddTaskModal) {
+                window.showAddTaskModal();
+            } else {
+                window.showMessage('Tính năng đang được phát triển!');
+            }
+        }
+    });
+}
 console.log('App module loaded!');

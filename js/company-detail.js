@@ -1,4 +1,4 @@
-// ========== CHI TIẐT CÔNG TY/HKD ==========
+// ========== CHI TIẾT CÔNG TY/HKD ==========
 
 // Format ngày giờ
 function formatDateTime(dateString) {
@@ -32,6 +32,21 @@ function getCompletionTime(task) {
     return task.updatedAt || task.createdAt;
 }
 
+// Toggle lịch sử thẻ
+window.toggleTagHistory = function() {
+    const content = document.getElementById('tagHistoryContent');
+    const icon = document.getElementById('tagHistoryIcon');
+    if (content) {
+        if (content.style.display === 'none' || !content.style.display) {
+            content.style.display = 'block';
+            if (icon) icon.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            if (icon) icon.classList.remove('rotated');
+        }
+    }
+};
+
 // Chuyển tab trong chi tiết công ty
 window.switchCompanyTaskTab = function(tab) {
     const btns = document.querySelectorAll('.company-task-tab');
@@ -51,14 +66,36 @@ window.switchCompanyTaskTab = function(tab) {
     }
 };
 
+// Toggle lịch sử cho recurring task
+window.toggleRecurringHistory = function(element) {
+    const list = element.nextElementSibling;
+    const icon = element.querySelector('.fa-chevron-down');
+    if (list) {
+        if (list.style.display === 'none' || !list.style.display) {
+            list.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            list.style.display = 'none';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+};
+
 // Render chi tiết công ty
 window.renderCompanyDetail = async function(companyId) {
+    // Tìm công ty
     const company = window.companiesList.find(c => c.id === companyId);
     if (!company) {
         console.error('Company not found:', companyId);
         return;
     }
     
+    // Đảm bảo load lịch sử thẻ
+    if (window.loadCompanyTagHistory) {
+        await window.loadCompanyTagHistory();
+    }
+    
+    // Lấy thống kê và công việc
     const stats = window.getCompanyStats(companyId);
     const companyTasks = window.getTasksByCompany(companyId);
     
@@ -177,23 +214,17 @@ window.renderCompanyDetail = async function(companyId) {
     
     // ===== CÔNG VIỆC ĐỊNH KỲ HTML =====
     const recurringTasksHtml = recurringTasks.map(task => {
-        // Kiểm tra đã hoàn thành hoặc bỏ qua trong kỳ này
         const completedThisPeriod = (task.history || []).some(h => 
             (h.action === 'completed' || h.action === 'skipped') && h.period === currentPeriod
         );
         const warning = !completedThisPeriod ? getTaskWarning(task.dueDate, 'pending') : '';
         const isRequired = task.required === true;
         
-        // Lấy lịch sử (bao gồm cả completed và skipped)
         const allHistory = (task.history || [])
             .filter(h => h.action === 'completed' || h.action === 'skipped')
             .sort((a, b) => new Date(b.at) - new Date(a.at));
-        const recentHistory = allHistory.slice(-3);
-        
-        // Lấy lần cuối cùng hoàn thành hoặc bỏ qua
         const lastAction = allHistory[0];
         
-        // Lấy lịch sử để hiển thị
         let historyHtml = '';
         if (allHistory.length > 0) {
             historyHtml = `
@@ -260,6 +291,71 @@ window.renderCompanyDetail = async function(companyId) {
         `;
     }).join('');
     
+    // ===== LỊCH SỬ GÁN THẺ (đổi tên biến để tránh trùng) =====
+    const tagHistoryData = (window.companyTagHistory && window.companyTagHistory[company.id]) ? window.companyTagHistory[company.id] : [];
+    const assignedCount = tagHistoryData.filter(h => h.action === 'assigned').length;
+    const removedCount = tagHistoryData.filter(h => h.action === 'removed').length;
+    
+    const tagHistorySectionHtml = tagHistoryData.length > 0 ? `
+        <div class="company-tag-history card" style="margin-top: 16px; padding: 12px 16px;">
+            <div class="tag-history-header" onclick="toggleTagHistory()">
+                <div class="tag-history-title">
+                    <i class="fas fa-tags"></i> Lịch sử gán thẻ
+                    <span class="tag-history-badge">${tagHistoryData.length} hoạt động</span>
+                </div>
+                <div class="tag-history-stats">
+                    <span class="tag-stat assigned">➕ Gán: ${assignedCount}</span>
+                    <span class="tag-stat removed">❌ Xóa: ${removedCount}</span>
+                    <i class="fas fa-chevron-down" id="tagHistoryIcon"></i>
+                </div>
+            </div>
+            <div id="tagHistoryContent" class="tag-history-content" style="display: none;">
+                <div style="max-height: 250px; overflow-y: auto;">
+                    ${tagHistoryData.slice().reverse().map(h => `
+                        <div class="tag-history-item">
+                            <div class="tag-history-item-header">
+                                <span class="tag-action ${h.action === 'assigned' ? 'assigned' : 'removed'}">
+                                    ${h.action === 'assigned' ? '➕ Gán thẻ' : '❌ Xóa thẻ'}
+                                </span>
+                                <span class="tag-name" style="background: ${h.tagColor || '#667eea'}20; color: ${h.tagColor || '#667eea'};">
+                                    <i class="fas fa-tag"></i> ${h.tagName}
+                                </span>
+                                <span class="tag-time">${new Date(h.at).toLocaleString('vi-VN')}</span>
+                            </div>
+                            <div class="tag-history-item-user">
+                                <i class="fas fa-user"></i> ${h.byName}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    ` : '';
+    
+    // Lịch sử thay đổi công ty
+    const companyHistoryHtml = company.history && company.history.length > 0 ? `
+        <div class="company-history card" style="margin-top: 16px; padding: 12px 16px;">
+            <details>
+                <summary style="cursor: pointer; font-size: 13px; color: #667eea; font-weight: 500;">
+                    <i class="fas fa-history"></i> Lịch sử thay đổi (${company.history.length})
+                </summary>
+                <div style="margin-top: 12px; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                    ${company.history.slice(-10).reverse().map(h => `
+                        <div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <span style="color: ${h.action === 'transferred' ? '#ff9800' : '#667eea'}">
+                                    ${h.action === 'transferred' ? '🔄' : h.action === 'created' ? '✨' : '✏️'}
+                                    <strong>${h.title || h.action}:</strong> ${h.description}
+                                </span>
+                                <span style="color: #999; font-size: 10px;">${new Date(h.at).toLocaleString('vi-VN')}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </details>
+        </div>
+    ` : '';
+    
     // Nút quay lại trên mobile
     const backButton = window.innerWidth <= 768 ? `
         <div class="back-to-list-btn" onclick="window.backToCompanyList()">
@@ -323,26 +419,10 @@ window.renderCompanyDetail = async function(companyId) {
                 <span class="${stats.overdue > 0 ? 'stat-warning' : ''}">⚠️ Quá hạn: <strong>${stats.overdue}</strong></span>
             </div>
         </div>
-        ${company.history && company.history.length > 0 ? `
-            <div class="company-history" style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
-                <details>
-                    <summary style="cursor: pointer; font-size: 12px; color: #667eea;">
-                        <i class="fas fa-history"></i> Lịch sử thay đổi (${company.history.length})
-                    </summary>
-                    <div style="margin-top: 8px; font-size: 11px; max-height: 150px; overflow-y: auto;">
-                        ${company.history.slice(-10).reverse().map(h => `
-                            <div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-                                <span style="color: ${h.action === 'transferred' ? '#ff9800' : '#667eea'}">
-                                    ${h.action === 'transferred' ? '🔄' : h.action === 'created' ? '✨' : '✏️'}
-                                </span>
-                                <strong>${h.title || h.action}:</strong> ${h.description}
-                                <span style="color: #999; float: right;">${new Date(h.at).toLocaleDateString('vi-VN')}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </details>
-            </div>
-        ` : ''}
+        
+        ${tagHistorySectionHtml}
+        ${companyHistoryHtml}
+        
         <div class="company-task-tabs">
             <button class="company-task-tab active" onclick="switchCompanyTaskTab('normal')">
                 <i class="fas fa-tasks"></i> Việc cần làm 
@@ -399,7 +479,6 @@ window.completeRecurringTaskFromCompany = async function(taskId) {
     window.showLoading();
     
     const history = task.history || [];
-    // Xóa log cũ của kỳ này (nếu có)
     const filteredHistory = history.filter(h => !(h.period === period));
     
     filteredHistory.push({
@@ -437,7 +516,7 @@ window.completeRecurringTaskFromCompany = async function(taskId) {
     window.showMessage(`✅ Đã hoàn thành "${task.title}" cho ${period}!`);
 };
 
-// Bỏ qua công việc định kỳ (vẫn tính vào tiến độ)
+// Bỏ qua công việc định kỳ
 window.skipRecurringTaskFromCompany = async function(taskId) {
     const task = window.tasksList.find(t => t.id === taskId);
     if (!task) {
@@ -454,7 +533,6 @@ window.skipRecurringTaskFromCompany = async function(taskId) {
     window.showLoading();
     
     const history = task.history || [];
-    // Xóa log cũ của kỳ này (nếu có)
     const filteredHistory = history.filter(h => !(h.period === period));
     
     filteredHistory.push({
@@ -491,50 +569,5 @@ window.skipRecurringTaskFromCompany = async function(taskId) {
     window.hideLoading();
     window.showMessage(`⏭️ Đã bỏ qua "${task.title}" cho ${period}!`);
 };
-// ========== TOGGLE FUNCTIONS ==========
 
-// Toggle lịch sử cho recurring task
-window.toggleRecurringHistory = function(element) {
-    const list = element.nextElementSibling;
-    const icon = element.querySelector('.fa-chevron-down');
-    if (list) {
-        if (list.style.display === 'none' || !list.style.display) {
-            list.style.display = 'block';
-            if (icon) icon.style.transform = 'rotate(180deg)';
-        } else {
-            list.style.display = 'none';
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        }
-    }
-};
-
-// Toggle lịch sử cho normal task (nếu có)
-window.toggleNormalHistory = function(element) {
-    const list = element.nextElementSibling;
-    const icon = element.querySelector('.fa-chevron-down');
-    if (list) {
-        if (list.style.display === 'none' || !list.style.display) {
-            list.style.display = 'block';
-            if (icon) icon.style.transform = 'rotate(180deg)';
-        } else {
-            list.style.display = 'none';
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        }
-    }
-};
-
-// Toggle lịch sử chung
-window.toggleHistory = function(element) {
-    const content = element.nextElementSibling;
-    const icon = element.querySelector('.fa-chevron-down');
-    if (content) {
-        if (content.style.display === 'none' || !content.style.display) {
-            content.style.display = 'block';
-            if (icon) icon.style.transform = 'rotate(180deg)';
-        } else {
-            content.style.display = 'none';
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        }
-    }
-};
 console.log('Company detail module loaded!');
